@@ -12,7 +12,8 @@ public class DefaultHandler implements Log.LogHandler {
 
     @Override
     public void println(final Log.LogEntry entry) {
-        android.util.Log.println(entry.priority, entry.tag, entry.message);
+        final String msg = entry.throwable != null ? entry.message + "\n" + Log.getStackTraceString(entry.throwable) : entry.message;
+        android.util.Log.println(entry.priority, entry.tag, msg);
         try {
             Log.recycleEntry(entry);
         } catch (InterruptedException e) {

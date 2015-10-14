@@ -119,9 +119,13 @@ public class FileHandler implements Log.LogHandler {
             buffer.append("/");
             buffer.append(entry.tag);
             buffer.append("] ");
-            buffer.append(entry.message);
+            buffer.append(getMessage(entry));
 
             writer.write(buffer.toString());
+        }
+
+        private String getMessage(final Log.LogEntry entry) {
+            return entry.throwable != null ? entry.message + "\n" + Log.getStackTraceString(entry.throwable) : entry.message;
         }
 
         @Override

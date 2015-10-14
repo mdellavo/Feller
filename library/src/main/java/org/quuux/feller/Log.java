@@ -14,19 +14,22 @@ public class Log {
         public int priority;
         public String tag;
         public String message;
+        public Throwable throwable;
 
         void recycle() {
             timestamp = 0;
             priority = 0;
             tag = null;
             message = null;
+            throwable = null;
         }
 
-        public void set(final long timestamp, final int priority, final String tag, final String msg) {
+        public void set(final long timestamp, final int priority, final String tag, final String msg, final Throwable throwable) {
             this.timestamp = timestamp;
             this.priority = priority;
             this.tag = tag;
             this.message = msg;
+            this.throwable = throwable;
         }
     }
 
@@ -51,9 +54,9 @@ public class Log {
             pool.add(new LogEntry());
     }
 
-    private static LogEntry getLogEntry(final long timestamp, final int priority, final String tag, final String msg) throws InterruptedException {
+    private static LogEntry getLogEntry(final long timestamp, final int priority, final String tag, final String msg, final Throwable throwable) throws InterruptedException {
         LogEntry entry = pool.take();
-        entry.set(timestamp, priority, tag, msg);
+        entry.set(timestamp, priority, tag, msg, throwable);
         return entry;
     }
 
@@ -71,12 +74,14 @@ public class Log {
     }
 
     public static void println(final int priority, final String tag, final String fmt, final Object... args) {
+
         final long timestamp = System.currentTimeMillis();
         final String msg = String.format(fmt, args);
+        final Throwable throwable = args.length > 0 && args[args.length-1] instanceof Throwable ? (Throwable) args[args.length - 1] : null;
 
         for (int i=0; i<handlers.length; i++) {
             try {
-                final LogEntry entry = getLogEntry(timestamp, priority, tag, msg);
+                final LogEntry entry = getLogEntry(timestamp, priority, tag, msg, throwable);
                 handlers[i].println(entry);
             } catch (InterruptedException e) {
                 android.util.Log.e("Log", "log entry pool underflow, dropping message!!!");
@@ -136,5 +141,9 @@ public class Log {
 
     public void w(final String message, final Object...args) {
         Log.w(mTag, message, args);
+    }
+
+    public static String getStackTraceString (Throwable tr) {
+        return android.util.Log.getStackTraceString(tr);
     }
 }
