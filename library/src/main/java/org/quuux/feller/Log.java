@@ -1,13 +1,65 @@
 package org.quuux.feller;
 
+import org.quuux.feller.handler.DefaultHandler;
+
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 public class Log {
+
+    private static final int POOL_SIZE = 1024;
+
+    public static class LogEntry {
+        public long timestamp;
+        public int priority;
+        public String tag;
+        public String message;
+
+        void recycle() {
+            timestamp = 0;
+            priority = 0;
+            tag = null;
+            message = null;
+        }
+
+        public void set(final long timestamp, final int priority, final String tag, final String msg) {
+            this.timestamp = timestamp;
+            this.priority = priority;
+            this.tag = tag;
+            this.message = msg;
+        }
+    }
+
+    public interface LogHandler {
+        void start();
+        void stop();
+        void println(LogEntry entry);
+    }
+
+    private static BlockingQueue<LogEntry> pool = new ArrayBlockingQueue<LogEntry>(POOL_SIZE, true);
+    private static LogHandler[] handlers = new LogHandler[] {new DefaultHandler()};
 
     private final String mTag;
     private static String sPrefix;
 
     public static void setsPrefix(final String prefix) {
         sPrefix = prefix;
+    }
+
+    private static void init() {
+        for (int i = 0; i < pool.remainingCapacity(); i++)
+            pool.add(new LogEntry());
+    }
+
+    private static LogEntry getLogEntry(final long timestamp, final int priority, final String tag, final String msg) throws InterruptedException {
+        LogEntry entry = pool.take();
+        entry.set(timestamp, priority, tag, msg);
+        return entry;
+    }
+
+    public static void recycleEntry(final LogEntry entry) throws InterruptedException {
+        entry.recycle();
+        pool.put(entry);
     }
 
     public static String buildTag(final String tag) {
@@ -19,7 +71,17 @@ public class Log {
     }
 
     public static void println(final int priority, final String tag, final String fmt, final Object... args) {
-        android.util.Log.println(priority, tag, String.format(fmt, args));
+        final long timestamp = System.currentTimeMillis();
+        final String msg = String.format(fmt, args);
+
+        for (int i=0; i<handlers.length; i++) {
+            try {
+                final LogEntry entry = getLogEntry(timestamp, priority, tag, msg);
+                handlers[i].println(entry);
+            } catch (InterruptedException e) {
+                android.util.Log.e("Log", "log entry pool underflow, dropping message!!!");
+            }
+        }
     }
 
     public static void d(final String tag, final String message, final Object...args) {
