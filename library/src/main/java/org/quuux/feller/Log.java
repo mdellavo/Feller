@@ -1,13 +1,18 @@
 package org.quuux.feller;
 
 import org.quuux.feller.handler.DefaultHandler;
+import org.quuux.feller.handler.FileHandler;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+// FIXME handler management
+// FIXME uncaught exception handler
+// FIXME publish
+
 public class Log {
 
-    private static final int POOL_SIZE = 1024;
+    public static final int POOL_SIZE = 1024;
 
     public static class LogEntry {
         public long timestamp;
@@ -39,7 +44,11 @@ public class Log {
         void println(LogEntry entry);
     }
 
-    private static BlockingQueue<LogEntry> pool = new ArrayBlockingQueue<LogEntry>(POOL_SIZE, true);
+    private static BlockingQueue<LogEntry> pool = new ArrayBlockingQueue<>(POOL_SIZE, true);
+    static {
+        init();
+    }
+
     private static LogHandler[] handlers = new LogHandler[] {new DefaultHandler()};
 
     private final String mTag;
@@ -52,6 +61,18 @@ public class Log {
     private static void init() {
         for (int i = 0; i < pool.remainingCapacity(); i++)
             pool.add(new LogEntry());
+    }
+
+    public static void setHandlers(final LogHandler... handlers) {
+        stop();
+        Log.handlers = handlers;
+        for (LogHandler handler : handlers)
+            handler.start();
+    }
+
+    public static void stop() {
+        for (LogHandler handler : handlers)
+            handler.stop();
     }
 
     private static LogEntry getLogEntry(final long timestamp, final int priority, final String tag, final String msg, final Throwable throwable) throws InterruptedException {
@@ -145,5 +166,14 @@ public class Log {
 
     public static String getStackTraceString (Throwable tr) {
         return android.util.Log.getStackTraceString(tr);
+    }
+
+    public static String AUTO() {
+        final Throwable tr = new Throwable();
+        final StackTraceElement[] stacktrace = tr.getStackTrace();
+        final StackTraceElement e = stacktrace[1];
+        final String className = stacktrace[1].getClassName();
+        final String simpleName = className.substring(className.lastIndexOf('.') + 1);
+        return String.format("%s.%s", simpleName, e.getMethodName());
     }
 }

@@ -6,11 +6,16 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.text.FieldPosition;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 public class FileHandler implements Log.LogHandler {
 
@@ -56,9 +61,9 @@ public class FileHandler implements Log.LogHandler {
         final StringBuffer timestampBuffer = new StringBuffer();
         final FieldPosition fieldPosition = new FieldPosition(0);
         final Date timestamp = new Date();
-        final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+        final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault());
 
-        private BufferedWriter open() {
+        private Writer open() {
             try {
                 return new BufferedWriter(new FileWriter(logPath));
             } catch (IOException e) {
@@ -109,17 +114,18 @@ public class FileHandler implements Log.LogHandler {
             return rv;
         }
 
-        private void write(final BufferedWriter writer, final Log.LogEntry entry) throws IOException {
+        private void write(final Writer writer, final Log.LogEntry entry) throws IOException {
             buffer.setLength(0);
 
             buffer.append("[");
             buffer.append(getTimestamp(entry));
-            buffer.append("   ");
+            buffer.append(" ");
             buffer.append(getPriority(entry));
             buffer.append("/");
             buffer.append(entry.tag);
             buffer.append("] ");
             buffer.append(getMessage(entry));
+            buffer.append("\n");
 
             writer.write(buffer.toString());
         }
@@ -130,22 +136,36 @@ public class FileHandler implements Log.LogHandler {
 
         @Override
         public void run() {
-            final BufferedWriter writer = open();
+            final Writer writer = open();
             if (writer == null) {
                 return;
             }
 
-            while (isWriting) {
+            final List<Log.LogEntry> entries = new ArrayList<>();
+            while (isWriting || queue.peek() != null) {
                 try {
-                    final Log.LogEntry entry = queue.take();
-                    write(writer, entry);
-                    Log.recycleEntry(entry);
+                    entries.clear();
+                    entries.add(queue.poll(100, TimeUnit.MILLISECONDS));
+                    queue.drainTo(entries);
+
+                    for (int i=0; i<entries.size(); i++) {
+                        final Log.LogEntry entry = entries.get(i);
+                        write(writer, entry);
+                        Log.recycleEntry(entry);
+                    }
+
                 } catch (InterruptedException e) {
                     android.util.Log.e("LogWriter", "error taking log entry for writing" + e);
                 } catch (IOException e) {
                     android.util.Log.e("LogWriter", "error writing log message" + e);
                 }
             }
+
+            try {
+                writer.close();
+            } catch (IOException e) {
+                android.util.Log.e("LogWriter", "error closing log" + e);
+            }
         }
-    };
+    }
 }
