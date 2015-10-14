@@ -26,15 +26,20 @@ public class ApplicationTest extends ApplicationTestCase<Application> {
 
     public void testFileHandler() {
         final File path = new File(Environment.getExternalStorageDirectory(), "test.log");
-        final FileHandler handler = new FileHandler(path);
+        Log.setHandlers(new FileHandler(path));
 
-        Log.setHandlers(handler);
-
-        for (int i=0; i<10; i++) {
+        for (int i = 0; i < 10; i++) {
             Log.d(Log.AUTO(), "hello world: i=%s", i, new Throwable("hi" + i));
         }
 
         Log.stop();
     }
 
+    public void testExceptionHandler() {
+        final File path = new File(Environment.getExternalStorageDirectory(), "error.log");
+        Log.setHandlers(new FileHandler(path));
+
+        final Log.UncaughtExceptionHandler handler = new Log.UncaughtExceptionHandler(null);
+        handler.uncaughtException(Thread.currentThread(), new Throwable("hi"));
+    }
 }

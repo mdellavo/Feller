@@ -1,13 +1,10 @@
 package org.quuux.feller;
 
 import org.quuux.feller.handler.DefaultHandler;
-import org.quuux.feller.handler.FileHandler;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
-// FIXME handler management
-// FIXME uncaught exception handler
 // FIXME publish
 
 public class Log {
@@ -40,16 +37,20 @@ public class Log {
 
     public interface LogHandler {
         void start();
+
         void stop();
+
         void println(LogEntry entry);
     }
 
     private static BlockingQueue<LogEntry> pool = new ArrayBlockingQueue<>(POOL_SIZE, true);
+
     static {
         init();
+        logExceptions();
     }
 
-    private static LogHandler[] handlers = new LogHandler[] {new DefaultHandler()};
+    private static LogHandler[] handlers = new LogHandler[]{new DefaultHandler()};
 
     private final String mTag;
     private static String sPrefix;
@@ -98,9 +99,9 @@ public class Log {
 
         final long timestamp = System.currentTimeMillis();
         final String msg = String.format(fmt, args);
-        final Throwable throwable = args.length > 0 && args[args.length-1] instanceof Throwable ? (Throwable) args[args.length - 1] : null;
+        final Throwable throwable = args.length > 0 && args[args.length - 1] instanceof Throwable ? (Throwable) args[args.length - 1] : null;
 
-        for (int i=0; i<handlers.length; i++) {
+        for (int i = 0; i < handlers.length; i++) {
             try {
                 final LogEntry entry = getLogEntry(timestamp, priority, tag, msg, throwable);
                 handlers[i].println(entry);
@@ -110,29 +111,29 @@ public class Log {
         }
     }
 
-    public static void d(final String tag, final String message, final Object...args) {
+    public static void d(final String tag, final String message, final Object... args) {
         if (BuildConfig.DEBUG) {
             println(android.util.Log.DEBUG, tag, message, args);
         }
     }
 
-    public static void v(final String tag, final String message, final Object...args) {
+    public static void v(final String tag, final String message, final Object... args) {
         if (BuildConfig.DEBUG) {
             println(android.util.Log.VERBOSE, tag, message, args);
         }
     }
 
-    public static void i(final String tag, final String message, final Object...args) {
+    public static void i(final String tag, final String message, final Object... args) {
         if (BuildConfig.DEBUG) {
             println(android.util.Log.INFO, tag, message, args);
         }
     }
 
-    public static void e(final String tag, final String message, final Object...args) {
+    public static void e(final String tag, final String message, final Object... args) {
         println(android.util.Log.ERROR, tag, message, args);
     }
 
-    public static void w(final String tag, final String message, final Object...args) {
+    public static void w(final String tag, final String message, final Object... args) {
         println(android.util.Log.WARN, tag, message, args);
     }
 
@@ -144,27 +145,27 @@ public class Log {
         this(klass.getName());
     }
 
-    public void d(final String message, final Object...args) {
+    public void d(final String message, final Object... args) {
         Log.d(mTag, message, args);
     }
 
-    public void v(final String message, final Object...args) {
+    public void v(final String message, final Object... args) {
         Log.v(mTag, message, args);
     }
 
-    public void i(final String message, final Object...args) {
+    public void i(final String message, final Object... args) {
         Log.i(mTag, message, args);
     }
 
-    public void e(final String message, final Object...args) {
+    public void e(final String message, final Object... args) {
         Log.e(mTag, message, args);
     }
 
-    public void w(final String message, final Object...args) {
+    public void w(final String message, final Object... args) {
         Log.w(mTag, message, args);
     }
 
-    public static String getStackTraceString (Throwable tr) {
+    public static String getStackTraceString(Throwable tr) {
         return android.util.Log.getStackTraceString(tr);
     }
 
@@ -175,5 +176,29 @@ public class Log {
         final String className = stacktrace[1].getClassName();
         final String simpleName = className.substring(className.lastIndexOf('.') + 1);
         return String.format("%s.%s", simpleName, e.getMethodName());
+    }
+
+    public static void logExceptions() {
+        final Thread.UncaughtExceptionHandler old = Thread.getDefaultUncaughtExceptionHandler();
+        final Thread.UncaughtExceptionHandler handler = new UncaughtExceptionHandler(old);
+        Thread.setDefaultUncaughtExceptionHandler(handler);
+    }
+
+    public static class UncaughtExceptionHandler implements Thread.UncaughtExceptionHandler {
+
+        private final Thread.UncaughtExceptionHandler old;
+
+        UncaughtExceptionHandler(final Thread.UncaughtExceptionHandler old) {
+            this.old = old;
+        }
+
+        @Override
+        public void uncaughtException(final Thread thread, final Throwable ex) {
+
+            Log.e("Log", "UNCAUGHT EXCEPTION IN THREAD %s: %s", thread.getId(), ex);
+
+            if (old != null)
+                old.uncaughtException(thread, ex);
+        }
     }
 }
