@@ -17,5 +17,28 @@ a number of helpful utilities.
 - Extensible log handlers
 - Extensible event watchers
 
+### Examples
+```java
+
+// Simple usage
+import static org.quuux.fellter.Log.AUTO;
+Log.d(AUTO(), "hello %s", world, new Throwable());
+
+String TAG = Log.buildTag(Foo.class);
+
+// Create an instance with fixed tag
+Log logger = new Log("tag");
+logger.d("hello world");
+
+// Setup handlers
+Log.setHandlers(new DefaultHandler(), new FileHandler(new File("/path/to/somewhere")));
+
+// Setup watchers
+Log.setWatchers(new ExceptionWatcher(), new ActivityWatcher(myApplication));
+
+// Shutdown
+Log.shutdown()
+```
+
 ### TODO
 
