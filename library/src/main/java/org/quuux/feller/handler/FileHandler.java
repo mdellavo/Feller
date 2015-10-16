@@ -19,6 +19,8 @@ import java.util.concurrent.TimeUnit;
 
 public class FileHandler implements Log.LogHandler {
 
+    private static final String TAG = "FileHandler";
+
     final private BlockingQueue<Log.LogEntry> queue = new LinkedBlockingQueue<>();
     final private File logPath;
 
@@ -42,7 +44,7 @@ public class FileHandler implements Log.LogHandler {
         try {
             writerThread.join();
         } catch (InterruptedException e) {
-            Log.e("Log", "error stopping writer thread", e);
+            Log.e(TAG, "error stopping writer thread", e);
         }
     }
 
@@ -51,7 +53,7 @@ public class FileHandler implements Log.LogHandler {
         try {
             queue.put(entry);
         } catch (InterruptedException e) {
-            android.util.Log.e("Log", "error queuing entry, dropping message!!!");
+            android.util.Log.e(TAG, "error queuing entry, dropping message!!!");
         }
     }
 
@@ -64,10 +66,18 @@ public class FileHandler implements Log.LogHandler {
         final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault());
 
         private Writer open() {
+
+            final File parent = logPath.getParentFile();
+            if (!parent.exists()) {
+                final boolean rv = parent.mkdirs();
+                if (!rv)
+                    android.util.Log.e(TAG, "could not create log dir: " + parent);
+            }
+
             try {
                 return new BufferedWriter(new FileWriter(logPath));
             } catch (IOException e) {
-                android.util.Log.e("LogWriter", "could not open log for writing: " + logPath, e);
+                android.util.Log.e(TAG, "could not open log for writing: " + logPath, e);
             }
             return null;
         }
@@ -155,16 +165,16 @@ public class FileHandler implements Log.LogHandler {
                     }
 
                 } catch (InterruptedException e) {
-                    android.util.Log.e("LogWriter", "error taking log entry for writing" + e);
+                    android.util.Log.e(TAG, "error taking log entry for writing" + e);
                 } catch (IOException e) {
-                    android.util.Log.e("LogWriter", "error writing log message" + e);
+                    android.util.Log.e(TAG, "error writing log message" + e);
                 }
             }
 
             try {
                 writer.close();
             } catch (IOException e) {
-                android.util.Log.e("LogWriter", "error closing log" + e);
+                android.util.Log.e(TAG, "error closing log" + e);
             }
         }
     }

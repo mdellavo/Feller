@@ -1,6 +1,7 @@
 package org.quuux.feller;
 
 import org.quuux.feller.handler.DefaultHandler;
+import org.quuux.feller.watcher.ExceptionWatcher;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -41,14 +42,19 @@ public class Log {
         void println(LogEntry entry);
     }
 
+    public interface Watcher {
+        void start();
+        void stop();
+    }
+
     private static BlockingQueue<LogEntry> pool = new ArrayBlockingQueue<>(POOL_SIZE, true);
 
     static {
         init();
-        logExceptions();
     }
 
     private static LogHandler[] handlers = new LogHandler[]{new DefaultHandler()};
+    private static Watcher[] watchers = new Watcher[] {new ExceptionWatcher()};
 
     private final String mTag;
     private static String sPrefix;
@@ -63,15 +69,40 @@ public class Log {
     }
 
     public static void setHandlers(final LogHandler... handlers) {
-        stop();
+        stopHandlers();
         Log.handlers = handlers;
+        startHandlers();
+    }
+
+    private static void startHandlers() {
         for (LogHandler handler : handlers)
             handler.start();
     }
 
-    public static void stop() {
+    private static void stopHandlers() {
         for (LogHandler handler : handlers)
             handler.stop();
+    }
+
+    public static void setWatchers(final Watcher... watchers) {
+        stopWatchers();
+        Log.watchers = watchers;
+        startWatchers();
+    }
+
+    private static void startWatchers() {
+        for (Watcher watcher : watchers)
+            watcher.start();
+    }
+
+    private static void stopWatchers() {
+        for (Watcher watcher : watchers)
+            watcher.stop();
+    }
+
+    public static void shutdown() {
+        stopHandlers();
+        stopWatchers();
     }
 
     private static LogEntry getLogEntry(final long timestamp, final int priority, final String tag, final String msg, final Throwable throwable) throws InterruptedException {
@@ -176,26 +207,4 @@ public class Log {
         return String.format("%s.%s", simpleName, e.getMethodName());
     }
 
-    public static void logExceptions() {
-        final Thread.UncaughtExceptionHandler old = Thread.getDefaultUncaughtExceptionHandler();
-        final Thread.UncaughtExceptionHandler handler = new UncaughtExceptionHandler(old);
-        Thread.setDefaultUncaughtExceptionHandler(handler);
-    }
-
-    public static class UncaughtExceptionHandler implements Thread.UncaughtExceptionHandler {
-
-        private final Thread.UncaughtExceptionHandler old;
-
-        UncaughtExceptionHandler(final Thread.UncaughtExceptionHandler old) {
-            this.old = old;
-        }
-
-        @Override
-        public void uncaughtException(final Thread thread, final Throwable ex) {
-            Log.e("Log", "UNCAUGHT EXCEPTION IN THREAD %s: %s", thread.getId(), ex);
-
-            if (old != null)
-                old.uncaughtException(thread, ex);
-        }
-    }
 }
