@@ -37,9 +37,7 @@ public class Log {
 
     public interface LogHandler {
         void start();
-
         void stop();
-
         void println(LogEntry entry);
     }
 
@@ -194,7 +192,6 @@ public class Log {
 
         @Override
         public void uncaughtException(final Thread thread, final Throwable ex) {
-
             Log.e("Log", "UNCAUGHT EXCEPTION IN THREAD %s: %s", thread.getId(), ex);
 
             if (old != null)
