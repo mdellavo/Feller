@@ -32,14 +32,7 @@ public class ApplicationTest extends ApplicationTestCase<Application> {
             Log.d(Log.AUTO(), "hello world: i=%s", i, new Throwable("hi" + i));
         }
 
-        Log.stop();
+        Log.shutdown();
     }
 
-    public void testExceptionHandler() {
-        final File path = new File(Environment.getExternalStorageDirectory(), "error.log");
-        Log.setHandlers(new FileHandler(path));
-
-        final Log.UncaughtExceptionHandler handler = new Log.UncaughtExceptionHandler(null);
-        handler.uncaughtException(Thread.currentThread(), new Throwable("hi"));
-    }
 }
