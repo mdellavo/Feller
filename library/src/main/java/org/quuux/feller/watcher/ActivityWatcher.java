@@ -28,7 +28,7 @@ public class ActivityWatcher implements AppMonitor.Watcher {
         final Application application = applicationRef.get();
         if (application == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.ICE_CREAM_SANDWICH)
             return;
-
+        callbacks = getCallbacks();
         application.registerActivityLifecycleCallbacks((Application.ActivityLifecycleCallbacks) callbacks);
     }
 

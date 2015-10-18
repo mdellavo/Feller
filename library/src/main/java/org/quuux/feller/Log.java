@@ -1,7 +1,6 @@
 package org.quuux.feller;
 
 import org.quuux.feller.handler.DefaultHandler;
-import org.quuux.feller.watcher.ExceptionWatcher;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -42,6 +41,10 @@ public class Log {
         void println(LogEntry entry);
     }
 
+    public interface AutoTagger {
+        String format(StackTraceElement loc);
+    }
+
     private static BlockingQueue<LogEntry> pool = new ArrayBlockingQueue<>(POOL_SIZE, true);
 
     static {
@@ -49,17 +52,22 @@ public class Log {
     }
 
     private static LogHandler[] handlers = new LogHandler[]{new DefaultHandler()};
+    private static AutoTagger tagger = new DefaultAutoTagger();
 
     private final String mTag;
     private static String sPrefix;
+
+    private static void init() {
+        for (int i = 0; i < pool.remainingCapacity(); i++)
+            pool.add(new LogEntry());
+    }
 
     public static void setsPrefix(final String prefix) {
         sPrefix = prefix;
     }
 
-    private static void init() {
-        for (int i = 0; i < pool.remainingCapacity(); i++)
-            pool.add(new LogEntry());
+    public static void setAutoTagger(final AutoTagger tagger) {
+        Log.tagger = tagger;
     }
 
     public static void setHandlers(final LogHandler... handlers) {
@@ -173,9 +181,16 @@ public class Log {
         final Throwable tr = new Throwable();
         final StackTraceElement[] stacktrace = tr.getStackTrace();
         final StackTraceElement e = stacktrace[1];
-        final String className = stacktrace[1].getClassName();
-        final String simpleName = className.substring(className.lastIndexOf('.') + 1);
-        return String.format("%s.%s", simpleName, e.getMethodName());
+        return tagger.format(e);
+    }
+
+    public static class DefaultAutoTagger implements AutoTagger {
+        @Override
+        public String format(final StackTraceElement e) {
+            final String className = e.getClassName();
+            final String simpleName = className.substring(className.lastIndexOf('.') + 1);
+            return String.format("%s.%s:%s", simpleName, e.getMethodName(), e.getLineNumber());
+        }
     }
 
 }

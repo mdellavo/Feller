@@ -127,13 +127,12 @@ public class FileHandler implements Log.LogHandler {
         private void write(final Writer writer, final Log.LogEntry entry) throws IOException {
             buffer.setLength(0);
 
-            buffer.append("[");
             buffer.append(getTimestamp(entry));
             buffer.append(" ");
             buffer.append(getPriority(entry));
-            buffer.append("/");
+            buffer.append(" ");
             buffer.append(entry.tag);
-            buffer.append("] ");
+            buffer.append(" ");
             buffer.append(getMessage(entry));
             buffer.append("\n");
 
@@ -155,14 +154,19 @@ public class FileHandler implements Log.LogHandler {
             while (isWriting || queue.peek() != null) {
                 try {
                     entries.clear();
-                    entries.add(queue.poll(100, TimeUnit.MILLISECONDS));
+                    Log.LogEntry entry = queue.poll(100, TimeUnit.MILLISECONDS);
+                    if (entry == null)
+                        continue;
+                    entries.add(entry);
                     queue.drainTo(entries);
 
                     for (int i=0; i<entries.size(); i++) {
-                        final Log.LogEntry entry = entries.get(i);
+                        entry = entries.get(i);
                         write(writer, entry);
                         Log.recycleEntry(entry);
                     }
+
+                    writer.flush();
 
                 } catch (InterruptedException e) {
                     android.util.Log.e(TAG, "error taking log entry for writing" + e);
