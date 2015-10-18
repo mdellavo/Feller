@@ -6,11 +6,12 @@ import android.app.Application;
 import android.os.Build;
 import android.os.Bundle;
 
+import org.quuux.feller.AppMonitor;
 import org.quuux.feller.Log;
 
 import java.lang.ref.WeakReference;
 
-public class ActivityWatcher implements Log.Watcher {
+public class ActivityWatcher implements AppMonitor.Watcher {
 
     private static final String TAG = Log.buildTag(ActivityWatcher.class);
 

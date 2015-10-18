@@ -42,11 +42,6 @@ public class Log {
         void println(LogEntry entry);
     }
 
-    public interface Watcher {
-        void start();
-        void stop();
-    }
-
     private static BlockingQueue<LogEntry> pool = new ArrayBlockingQueue<>(POOL_SIZE, true);
 
     static {
@@ -54,7 +49,6 @@ public class Log {
     }
 
     private static LogHandler[] handlers = new LogHandler[]{new DefaultHandler()};
-    private static Watcher[] watchers = new Watcher[] {new ExceptionWatcher()};
 
     private final String mTag;
     private static String sPrefix;
@@ -84,25 +78,8 @@ public class Log {
             handler.stop();
     }
 
-    public static void setWatchers(final Watcher... watchers) {
-        stopWatchers();
-        Log.watchers = watchers;
-        startWatchers();
-    }
-
-    private static void startWatchers() {
-        for (Watcher watcher : watchers)
-            watcher.start();
-    }
-
-    private static void stopWatchers() {
-        for (Watcher watcher : watchers)
-            watcher.stop();
-    }
-
     public static void shutdown() {
         stopHandlers();
-        stopWatchers();
     }
 
     private static LogEntry getLogEntry(final long timestamp, final int priority, final String tag, final String msg, final Throwable throwable) throws InterruptedException {
@@ -141,21 +118,15 @@ public class Log {
     }
 
     public static void d(final String tag, final String message, final Object... args) {
-        if (BuildConfig.DEBUG) {
-            println(android.util.Log.DEBUG, tag, message, args);
-        }
+        println(android.util.Log.DEBUG, tag, message, args);
     }
 
     public static void v(final String tag, final String message, final Object... args) {
-        if (BuildConfig.DEBUG) {
-            println(android.util.Log.VERBOSE, tag, message, args);
-        }
+        println(android.util.Log.VERBOSE, tag, message, args);
     }
 
     public static void i(final String tag, final String message, final Object... args) {
-        if (BuildConfig.DEBUG) {
-            println(android.util.Log.INFO, tag, message, args);
-        }
+        println(android.util.Log.INFO, tag, message, args);
     }
 
     public static void e(final String tag, final String message, final Object... args) {

@@ -1,8 +1,9 @@
 package org.quuux.feller.watcher;
 
+import org.quuux.feller.AppMonitor;
 import org.quuux.feller.Log;
 
-public class ExceptionWatcher implements Log.Watcher, Thread.UncaughtExceptionHandler {
+public class ExceptionWatcher implements AppMonitor.Watcher, Thread.UncaughtExceptionHandler {
     private Thread.UncaughtExceptionHandler defaultHandler;
 
     @Override
