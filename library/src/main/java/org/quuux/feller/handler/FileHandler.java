@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.TimeZone;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -21,14 +22,22 @@ public class FileHandler implements Log.LogHandler {
 
     private static final String TAG = "FileHandler";
 
-    final private BlockingQueue<Log.LogEntry> queue = new LinkedBlockingQueue<>();
-    final private File logPath;
+    private final BlockingQueue<Log.LogEntry> queue = new LinkedBlockingQueue<>();
+    private final File logPath;
+    private final String terminator;
 
     private boolean isWriting;
     private Thread writerThread = null;
+    private String separator;
+
+    public FileHandler(final String separator, final String terminator, final File logPath) {
+        this.separator = separator;
+        this.terminator = terminator;
+        this.logPath = logPath;
+    }
 
     public FileHandler(final File logPath) {
-        this.logPath = logPath;
+        this(" ", "\n", logPath);
     }
 
     @Override
@@ -64,6 +73,10 @@ public class FileHandler implements Log.LogHandler {
         final FieldPosition fieldPosition = new FieldPosition(0);
         final Date timestamp = new Date();
         final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault());
+
+        public LogWriter() {
+            dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+        }
 
         private Writer open() {
 
@@ -128,13 +141,13 @@ public class FileHandler implements Log.LogHandler {
             buffer.setLength(0);
 
             buffer.append(getTimestamp(entry));
-            buffer.append(" ");
+            buffer.append(separator);
             buffer.append(getPriority(entry));
-            buffer.append(" ");
+            buffer.append(separator);
             buffer.append(entry.tag);
-            buffer.append(" ");
+            buffer.append(separator);
             buffer.append(getMessage(entry));
-            buffer.append("\n");
+            buffer.append(terminator);
 
             writer.write(buffer.toString());
         }

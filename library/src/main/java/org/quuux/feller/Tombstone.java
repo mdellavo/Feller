@@ -9,28 +9,27 @@ import android.os.Build;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class Tombstone {
 
     private static final String TAG = Log.buildTag(Tombstone.class);
 
-    private static ApplicationInfo app;
-
+    public final ApplicationInfo app;
+    public final Date timestamp;
     public final String uid;
     public final DeviceInfo device;
     public final ThreadInfo thread;
     public final ExceptionInfo exception;
 
-    public Tombstone(final String uid, final DeviceInfo deviceInfo, final ThreadInfo threadInfo, final ExceptionInfo exceptionInfo) {
+    public Tombstone(final long timestamp, final String uid, final ApplicationInfo app, final DeviceInfo deviceInfo, final ThreadInfo threadInfo, final ExceptionInfo exceptionInfo) {
+        this.app = app;
+        this.timestamp = new Date(timestamp);
         this.uid = uid;
         this.device = deviceInfo;
         this.thread = threadInfo;
         this.exception = exceptionInfo;
-    }
-
-    public static void setApplicationInfo(final Context context) {
-        Tombstone.app = getApplicationInfo(context);
     }
 
     public static class DeviceInfo {
@@ -65,8 +64,8 @@ public class Tombstone {
         public boolean isNative;
     }
 
-    public static Tombstone build(final String uuid, Thread thread, Throwable ex) {
-        return new Tombstone(uuid, getDeviceInfo(), getThreadInfo(thread), getExceptionInfo(ex));
+    public static Tombstone build(final long timestamp, final String uuid, final ApplicationInfo app, Thread thread, Throwable ex) {
+        return new Tombstone(timestamp, uuid, app, getDeviceInfo(), getThreadInfo(thread), getExceptionInfo(ex));
     }
 
     private static ExceptionInfo getExceptionInfo(final Throwable ex) {
