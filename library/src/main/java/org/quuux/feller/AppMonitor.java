@@ -2,7 +2,6 @@ package org.quuux.feller;
 
 import android.app.Application;
 import android.content.Context;
-import android.os.Trace;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -58,6 +57,7 @@ public class AppMonitor implements Thread.UncaughtExceptionHandler {
         app = Tombstone.getApplicationInfo(context);
 
         Log.setHandlers(new DefaultHandler(), new FileHandler("\t", "\r\n", getLogPath()));
+        Trace.setTraceFile(getTracePath());
 
         defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler(this);
@@ -90,6 +90,10 @@ public class AppMonitor implements Thread.UncaughtExceptionHandler {
         return new File(getSessionPath(), "log.txt");
     }
 
+    private File getTracePath() {
+        return new File(getSessionPath(), "traces.jsonl");
+    }
+
     private File getTombstonePath() {
         return new File(getSessionPath(), "tombstone.json");
     }
@@ -101,7 +105,7 @@ public class AppMonitor implements Thread.UncaughtExceptionHandler {
     @Override
     public void uncaughtException(final Thread thread, final Throwable ex) {
 
-        //Log.e("Log", "UNCAUGHT EXCEPTION IN THREAD %s/%s: %s", thread.getId(), thread.getName(), ex);
+        Log.e("Log", "UNCAUGHT EXCEPTION IN THREAD %s/%s: %s", thread.getId(), thread.getName(), ex);
 
         final Tombstone tombstone = Tombstone.build(System.currentTimeMillis(), uuid, app, thread, ex);
         new GraveDigger(tombstone, getTombstonePath()).run();
@@ -123,7 +127,7 @@ public class AppMonitor implements Thread.UncaughtExceptionHandler {
         @Override
         public void run() {
             final Gson gson = new GsonBuilder()
-                    .setDateFormat("yyyy-MM-dd'T'HH:mm:ssX")
+                    .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
                     .setPrettyPrinting()
                     .create();
             final String json = gson.toJson(tombstone);
@@ -142,7 +146,7 @@ public class AppMonitor implements Thread.UncaughtExceptionHandler {
 
     static class Reaper implements Runnable {
 
-        private static final String HOST = "192.168.1.9:6543";
+        private static final String HOST = "192.168.1.13:6543";
         private final File graveyardPath;
         private final String currentSession;
 

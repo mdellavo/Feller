@@ -5,7 +5,6 @@ import org.quuux.feller.handler.DefaultHandler;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
-// FIXME publish
 
 public class Log {
 
@@ -48,7 +47,8 @@ public class Log {
     private static BlockingQueue<LogEntry> pool = new ArrayBlockingQueue<>(POOL_SIZE, true);
 
     static {
-        init();
+        for (int i = 0; i < pool.remainingCapacity(); i++)
+            pool.add(new LogEntry());
     }
 
     private static LogHandler[] handlers = new LogHandler[]{new DefaultHandler()};
@@ -56,11 +56,6 @@ public class Log {
 
     private final String mTag;
     private static String sPrefix;
-
-    private static void init() {
-        for (int i = 0; i < pool.remainingCapacity(); i++)
-            pool.add(new LogEntry());
-    }
 
     public static void setsPrefix(final String prefix) {
         sPrefix = prefix;

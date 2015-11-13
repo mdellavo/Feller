@@ -1,22 +1,11 @@
 package org.quuux.feller.handler;
 
 import org.quuux.feller.Log;
+import org.quuux.feller.util.LineWriter;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
-import java.text.FieldPosition;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.TimeZone;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 public class FileHandler implements Log.LogHandler {
 
@@ -26,9 +15,9 @@ public class FileHandler implements Log.LogHandler {
     private final File logPath;
     private final String terminator;
 
-    private boolean isWriting;
     private Thread writerThread = null;
     private String separator;
+    private LogWriter writer;
 
     public FileHandler(final String separator, final String terminator, final File logPath) {
         this.separator = separator;
@@ -42,14 +31,14 @@ public class FileHandler implements Log.LogHandler {
 
     @Override
     public void start() {
-        isWriting = true;
-        writerThread = new Thread(new LogWriter());
+        writer = new LogWriter(logPath, queue);
+        writerThread = new Thread(writer);
         writerThread.start();
     }
 
     @Override
     public void stop() {
-        isWriting = false;
+        writer.stop();
         try {
             writerThread.join();
         } catch (InterruptedException e) {
@@ -66,39 +55,12 @@ public class FileHandler implements Log.LogHandler {
         }
     }
 
-    private class LogWriter implements Runnable {
+    private class LogWriter extends LineWriter<Log.LogEntry> {
 
         final StringBuilder buffer = new StringBuilder();
-        final StringBuffer timestampBuffer = new StringBuffer();
-        final FieldPosition fieldPosition = new FieldPosition(0);
-        final Date timestamp = new Date();
-        final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault());
 
-        public LogWriter() {
-            dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        }
-
-        private Writer open() {
-
-            final File parent = logPath.getParentFile();
-            if (!parent.exists()) {
-                final boolean rv = parent.mkdirs();
-                if (!rv)
-                    android.util.Log.e(TAG, "could not create log dir: " + parent);
-            }
-
-            try {
-                return new BufferedWriter(new FileWriter(logPath));
-            } catch (IOException e) {
-                android.util.Log.e(TAG, "could not open log for writing: " + logPath, e);
-            }
-            return null;
-        }
-
-        private String getTimestamp(final Log.LogEntry entry) {
-            timestampBuffer.setLength(0);
-            timestamp.setTime(entry.timestamp);
-            return dateFormat.format(timestamp, timestampBuffer, fieldPosition).toString();
+        public LogWriter(final File path, final BlockingQueue<Log.LogEntry> queue) {
+            super(path, queue);
         }
 
         private String getPriority(final Log.LogEntry entry) {
@@ -137,10 +99,10 @@ public class FileHandler implements Log.LogHandler {
             return rv;
         }
 
-        private void write(final Writer writer, final Log.LogEntry entry) throws IOException {
+        protected String write(final Log.LogEntry entry) {
             buffer.setLength(0);
 
-            buffer.append(getTimestamp(entry));
+            buffer.append(getTimestamp(entry.timestamp));
             buffer.append(separator);
             buffer.append(getPriority(entry));
             buffer.append(separator);
@@ -148,8 +110,7 @@ public class FileHandler implements Log.LogHandler {
             buffer.append(separator);
             buffer.append(getMessage(entry));
             buffer.append(terminator);
-
-            writer.write(buffer.toString());
+            return buffer.toString();
         }
 
         private String getMessage(final Log.LogEntry entry) {
@@ -157,41 +118,12 @@ public class FileHandler implements Log.LogHandler {
         }
 
         @Override
-        public void run() {
-            final Writer writer = open();
-            if (writer == null) {
-                return;
-            }
-
-            final List<Log.LogEntry> entries = new ArrayList<>();
-            while (isWriting || queue.peek() != null) {
-                try {
-                    entries.clear();
-                    Log.LogEntry entry = queue.poll(100, TimeUnit.MILLISECONDS);
-                    if (entry == null)
-                        continue;
-                    entries.add(entry);
-                    queue.drainTo(entries);
-
-                    for (int i=0; i<entries.size(); i++) {
-                        entry = entries.get(i);
-                        write(writer, entry);
-                        Log.recycleEntry(entry);
-                    }
-
-                    writer.flush();
-
-                } catch (InterruptedException e) {
-                    android.util.Log.e(TAG, "error taking log entry for writing" + e);
-                } catch (IOException e) {
-                    android.util.Log.e(TAG, "error writing log message" + e);
-                }
-            }
-
+        protected void recycle(final Log.LogEntry entry) {
+            super.recycle(entry);
             try {
-                writer.close();
-            } catch (IOException e) {
-                android.util.Log.e(TAG, "error closing log" + e);
+                Log.recycleEntry(entry);
+            } catch (InterruptedException e) {
+                Log.e(TAG, "error recycling entry: %s", e);
             }
         }
     }

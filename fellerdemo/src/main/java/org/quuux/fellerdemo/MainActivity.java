@@ -26,12 +26,16 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                throw new RuntimeException("goodbye world");
+                goodbye();
             }
-        }, 1000);
+        }, 2000);
+    }
+
+    private void goodbye() {
+        Log.d(AUTO(), "throwing");
+        //throw new RuntimeException("goodbye world");
     }
 }

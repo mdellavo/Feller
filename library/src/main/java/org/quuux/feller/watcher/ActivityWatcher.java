@@ -8,6 +8,7 @@ import android.os.Bundle;
 
 import org.quuux.feller.AppMonitor;
 import org.quuux.feller.Log;
+import org.quuux.feller.Trace;
 
 import java.lang.ref.WeakReference;
 
@@ -41,32 +42,41 @@ public class ActivityWatcher implements AppMonitor.Watcher {
         application.unregisterActivityLifecycleCallbacks((Application.ActivityLifecycleCallbacks) callbacks);
     }
 
+    private String getTraceSection(final Activity activity, final String section) {
+        return String.format("%s/%s", activity.getClass().getSimpleName(), section);
+    }
+
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
     private Object getCallbacks() {
         return new Application.ActivityLifecycleCallbacks() {
             @Override
             public void onActivityCreated(final Activity activity, final Bundle savedInstanceState) {
                 Log.d(TAG, "Activity %s created (savedInstanceState=%s)", activity.getClass().getSimpleName(), savedInstanceState);
+                Trace.beginSection(getTraceSection(activity, "Created"));
             }
 
             @Override
             public void onActivityStarted(final Activity activity) {
                 Log.d(TAG, "Activity %s started", activity.getClass().getSimpleName());
+                Trace.beginSection(getTraceSection(activity, "Started"));
             }
 
             @Override
             public void onActivityResumed(final Activity activity) {
                 Log.d(TAG, "Activity %s resumed", activity.getClass().getSimpleName());
+                Trace.beginSection(getTraceSection(activity, "Resumed"));
             }
 
             @Override
             public void onActivityPaused(final Activity activity) {
                 Log.d(TAG, "Activity %s paused", activity.getClass().getSimpleName());
+                Trace.endSection();
             }
 
             @Override
             public void onActivityStopped(final Activity activity) {
                 Log.d(TAG, "Activity %s stopped", activity.getClass().getSimpleName());
+                Trace.endSection();
             }
 
             @Override
@@ -77,6 +87,7 @@ public class ActivityWatcher implements AppMonitor.Watcher {
             @Override
             public void onActivityDestroyed(final Activity activity) {
                 Log.d(TAG, "Activity %s destroyed", activity.getClass().getSimpleName());
+                Trace.endSection();
             }
         };
     }
