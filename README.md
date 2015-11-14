@@ -5,17 +5,21 @@ Feller is a set of tools to help with debugging applications.
 
 ## Log
 
-Log is a drop in replacement for logging in your application. It aims for high performance and extensibility.
+Log is a drop in replacement for the Android Log class. It aims for high performance and extensibility.
 Log supports multiple log handlers for collecting output.  Log also has support for Watchers to
 gather additional logging information such as unhandled exceptions and Activity lifecycle. Log also
 a number of helpful utilities.
+
+## Trace
+
+Trace is a drop in replacement for the Android Trace class.
 
 ### Features
 - String.format style log formatting
 - Traceback if last argument is a Throwable
 - Log.AUTO() autotagger via introspection
 - Extensible log handlers
-- Extensible event watchers
+- Trace replacement with fallback to Log on unsupported platforms
 
 ### Examples
 ```java
@@ -33,11 +37,12 @@ logger.d("hello world");
 // Setup handlers
 Log.setHandlers(new DefaultHandler(), new FileHandler(new File("/path/to/somewhere")));
 
-// Setup watchers
-Log.setWatchers(new ExceptionWatcher(), new ActivityWatcher(myApplication));
 
-// Shutdown
-Log.shutdown()
+// Trace support
+Trace.setTraceFile(new File("path/to/elsewhere"));
+Trace.beginSection("foo");
+// do stuff..
+Trace.endSection();
 ```
 
 ### TODO
