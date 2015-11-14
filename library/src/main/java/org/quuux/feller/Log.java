@@ -101,7 +101,7 @@ public class Log {
     }
 
     public static String buildTag(final Class klass) {
-        return buildTag(klass.getName());
+        return buildTag(klass.getSimpleName());
     }
 
     public static void println(final int priority, final String tag, final String fmt, final Object... args) {
