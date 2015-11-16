@@ -8,6 +8,7 @@ import java.io.File;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 public class Trace {
 
@@ -111,9 +112,11 @@ public class Trace {
 
     private static void commitTrace(final TraceRecord trace) {
         try {
-            final TraceRecord entry = pool.take();
-            entry.copy(trace);
-            queue.put(entry);
+            final TraceRecord entry = pool.poll(0, TimeUnit.MILLISECONDS);
+            if (entry != null) {
+                entry.copy(trace);
+                queue.offer(entry);
+            }
         } catch (InterruptedException e) {
             Log.e(TAG, "error committing trace", e);
         }
@@ -146,11 +149,7 @@ public class Trace {
         protected void recycle(final TraceRecord entry) {
             super.recycle(entry);
             entry.recycle();
-            try {
-                pool.put(entry);
-            } catch (InterruptedException e) {
-                Log.e(TAG, "error recycling trace", e);
-            }
+            pool.offer(entry);
         }
     }
 }

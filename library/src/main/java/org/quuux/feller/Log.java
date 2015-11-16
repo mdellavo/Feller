@@ -4,9 +4,12 @@ import org.quuux.feller.handler.DefaultHandler;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 
 public class Log {
+
+    private static final String TAG = buildTag(Log.class);
 
     public static final int POOL_SIZE = 1024;
 
@@ -85,15 +88,22 @@ public class Log {
         stopHandlers();
     }
 
-    private static LogEntry getLogEntry(final long timestamp, final int priority, final String tag, final String msg, final Throwable throwable) throws InterruptedException {
-        LogEntry entry = pool.take();
-        entry.set(timestamp, priority, tag, msg, throwable);
+    private static LogEntry getLogEntry(final long timestamp, final int priority, final String tag, final String msg, final Throwable throwable) {
+        LogEntry entry = null;
+        try {
+            entry = pool.poll(0, TimeUnit.MILLISECONDS);
+            if (entry != null)
+                entry.set(timestamp, priority, tag, msg, throwable);
+            else
+                android.util.Log.e(TAG, "no available log entries in pool");
+        } catch (InterruptedException ignored) {
+        }
         return entry;
     }
 
-    public static void recycleEntry(final LogEntry entry) throws InterruptedException {
+    public static void recycleEntry(final LogEntry entry) {
         entry.recycle();
-        pool.put(entry);
+        pool.offer(entry);
     }
 
     public static String buildTag(final String tag) {
@@ -111,12 +121,9 @@ public class Log {
         final Throwable throwable = args.length > 0 && args[args.length - 1] instanceof Throwable ? (Throwable) args[args.length - 1] : null;
 
         for (int i = 0; i < handlers.length; i++) {
-            try {
-                final LogEntry entry = getLogEntry(timestamp, priority, tag, msg, throwable);
+            final LogEntry entry = getLogEntry(timestamp, priority, tag, msg, throwable);
+            if (entry != null)
                 handlers[i].println(entry);
-            } catch (InterruptedException e) {
-                android.util.Log.e("Log", "log entry pool underflow, dropping message!!!");
-            }
         }
     }
 

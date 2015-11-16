@@ -48,11 +48,7 @@ public class FileHandler implements Log.LogHandler {
 
     @Override
     public void println(final Log.LogEntry entry) {
-        try {
-            queue.put(entry);
-        } catch (InterruptedException e) {
-            android.util.Log.e(TAG, "error queuing entry, dropping message!!!");
-        }
+        queue.offer(entry);
     }
 
     private class LogWriter extends LineWriter<Log.LogEntry> {
@@ -120,11 +116,7 @@ public class FileHandler implements Log.LogHandler {
         @Override
         protected void recycle(final Log.LogEntry entry) {
             super.recycle(entry);
-            try {
-                Log.recycleEntry(entry);
-            } catch (InterruptedException e) {
-                Log.e(TAG, "error recycling entry: %s", e);
-            }
+            Log.recycleEntry(entry);
         }
     }
 }
