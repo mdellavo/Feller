@@ -1,5 +1,5 @@
-Feller - Aset of tools to help with debugging applications
-==========================================================
+Feller - A set of debugging tools
+=================================
 
 Log
 ---
