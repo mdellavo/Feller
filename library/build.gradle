@@ -3,7 +3,9 @@ apply plugin: 'com.jfrog.bintray'
 
 android {
     compileSdkVersion 23
-    buildToolsVersion "23.0.1"
+    buildToolsVersion "23.0.2"
+
+    resourcePrefix "feller__"
 
     defaultConfig {
         minSdkVersion 9
@@ -11,30 +13,29 @@ android {
         versionCode 1
         versionName "0.1"
     }
+
+    lintOptions {
+        abortOnError false
+    }
 }
 
-ext {
-    bintrayRepo = 'maven'
-    bintrayName = 'feller'
 
-    publishedGroupId = 'org.quuux.feller'
-    libraryName = 'Feller'
-    artifact = 'feller'
-
-    libraryDescription = 'A flexible and efficient Log replacement for Android'
-
-    siteUrl = 'https://github.com/mdellavo/Feller'
-    gitUrl = 'https://github.com/mdellavo/Feller.git'
-
-    libraryVersion = '0.1'
-
-    developerId = 'mdellavo'
-    developerName = 'Marc DellaVolpe'
-    developerEmail = 'marc.dellavolpe@gmail.com'
-
-    licenseName = 'The Apache Software License, Version 2.0'
-    licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-    allLicenses = ["Apache-2.0"]
+bintray {
+    user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
+    key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
+    configurations = ['archives']
+    pkg {
+        repo = 'maven'
+        name = 'feller'
+        userOrg = "mdellavo"
+        licenses = ['Apache-2.0']
+        vcsUrl = 'https://github.com/mdellavo/Feller.git'
+        version {
+            name = '0.1'
+            desc = 'A drop in Log replacement'
+            vcsTag = '0.1'
+        }
+    }
 }
 
 dependencies {
