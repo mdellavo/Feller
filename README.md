@@ -52,7 +52,7 @@ Trace.endSection();
 Download
 --------
 
-via jCenter: https://bintray.com/mdellavo/maven/feller/view
+via BinTray: https://bintray.com/mdellavo/maven/feller/view
 
 via Gradle:
 
