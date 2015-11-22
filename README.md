@@ -49,6 +49,32 @@ Trace.beginSection("foo");
 Trace.endSection();
 ```
 
+Download
+--------
+
+via Gradle:
+
+Add the maven respository:
+```gradle
+allprojects {
+    repositories {
+        jcenter()
+
+        maven {
+            url  "http://dl.bintray.com/mdellavo/maven"
+        }
+    }
+}
+```
+
+Add the dependency
+```gradle
+dependencies {
+    compile 'org.quuux.feller:feller:0.1'
+}
+
+```
+
 License
 -------
 

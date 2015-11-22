@@ -1,6 +1,6 @@
 apply plugin: 'com.android.library'
 
-group = 'org.quuux'
+group = 'org.quuux.feller'
 version = '0.1'
 
 apply plugin: 'com.github.dcendents.android-maven'
@@ -38,7 +38,7 @@ install {
                 inceptionYear '2015'
 
                 packaging 'aar'
-                groupId 'org.quuux'
+                groupId 'org.quuux.feller'
                 artifactId 'feller'
                 version '0.1'
 
