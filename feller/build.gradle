@@ -1,0 +1,109 @@
+apply plugin: 'com.android.library'
+
+group = 'org.quuux'
+version = '0.1'
+
+apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'com.jfrog.bintray'
+
+android {
+    compileSdkVersion 23
+    buildToolsVersion "23.0.2"
+
+    resourcePrefix "feller__"
+
+    defaultConfig {
+        minSdkVersion 9
+        targetSdkVersion 23
+        versionCode 1
+        versionName "0.1"
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+}
+
+
+
+install {
+
+    repositories.mavenInstaller {
+        pom {
+            project {
+
+                name 'feller'
+                description 'A set of debugging tools for Android'
+                url 'https://github.com/mdellavo/Feller'
+                inceptionYear '2015'
+
+                packaging 'aar'
+                groupId 'org.quuux'
+                artifactId 'feller'
+                version '0.1'
+
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution 'repo'
+                    }
+                }
+                scm {
+                    connection 'https://github.com/mdellavo/Feller.git'
+                    url 'https://github.com/mdellavo/Feller'
+
+                }
+                developers {
+                    developer {
+                        name 'Marc DellaVolpe'
+                    }
+                }
+            }
+        }
+    }
+}
+bintray {
+    user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
+    key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
+    configurations = ['archives']
+    pkg {
+        repo = 'maven'
+        name = 'feller'
+        userOrg = "mdellavo"
+        licenses = ['Apache-2.0']
+        vcsUrl = 'https://github.com/mdellavo/Feller.git'
+        version {
+            name = '0.1'
+            desc = 'A set of debugging tools for Android'
+            vcsTag = '0.1'
+        }
+    }
+}
+
+dependencies {
+    testCompile 'junit:junit:4.12'
+}
+
+task sourcesJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    classifier = 'sources'
+}
+
+task javadoc(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
+
+task findConventions << {
+    println project.getConvention()
+}

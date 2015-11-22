@@ -1,1 +1,1 @@
-include ':library', ':fellerdemo'
+include ':feller', ':fellerdemo'
